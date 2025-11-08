@@ -25,7 +25,8 @@ interface TeacherFormValues {
   biography: string;
   imgUrl: string;
   input: string;
-  lavozmId: number;
+  profession:string;
+  lavozmId: number; 
   email: string;
   age: number;
   gender: boolean;
@@ -50,6 +51,7 @@ interface TeacherSidebarProps {
   positionList?: Position[];
   createMutation: UseMutationResult<any, any, any, any>;
   uploadImageMutation: UseMutationResult<any, any, File, any>;
+  uploadPDFMutation: UseMutationResult<any, any, File, any>;
 }
 
 export const TeacherSidebar = ({
@@ -57,55 +59,68 @@ export const TeacherSidebar = ({
   editMode = false,
   departmentList = [],
   positionList = [],
-  createMutation,
+  createMutation, 
   uploadImageMutation,
+  uploadPDFMutation,
 }: TeacherSidebarProps) => {
   const { isOpen, closeDrawer } = useDrawerStore();
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [PDFfile, setPDFfile] = useState<UploadFile[]>([]);
 
   const handleClose = () => {
     form.resetFields();
     setFileList([]);
+    setPDFfile([]);
     closeDrawer();
   };
 
   const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
+  try {
+    const values = await form.validateFields();
 
-      let uploadedImageUrl = '';
+    let uploadedImageUrl = '';
+    let uploadedPDFUrls: string[] = [];
 
-      // Agar rasm tanlangan bo'lsa, avval uni yuklash
-      if (fileList.length > 0 && fileList[0].originFileObj) {
-        const imageData = await uploadImageMutation.mutateAsync(
-          fileList[0].originFileObj
-        );
-        uploadedImageUrl = imageData || '';
-      }
-
-      // O'qituvchi ma'lumotlarini tayyorlash
-      const formData: TeacherFormValues = {
-        fullName: values.fullName,
-        phoneNumber: values.phoneNumber,
-        biography: values.biography || '',
-        imgUrl: uploadedImageUrl,
-        input: values.input || '',
-        lavozmId: Number(values.lavozmId),
-        email: values.email,
-        age: Number(values.age),
-        gender: values.gender === 'male',
-        password: values.password,
-        departmentId: Number(values.departmentId),
-      };
-
-      // O'qituvchi qo'shish
-      await createMutation.mutateAsync(formData);
-      handleClose();
-    } catch (error) {
-      console.error('Validation or submission failed:', error);
+    if (fileList.length > 0 && fileList[0].originFileObj) {
+      const imageData = await uploadImageMutation.mutateAsync(
+        fileList[0].originFileObj
+      );
+      uploadedImageUrl = imageData || '';
     }
-  };
+
+    if (PDFfile.length > 0) {
+      for (const file of PDFfile) {
+        if (file.originFileObj) {
+          const pdfUrl = await uploadPDFMutation.mutateAsync(file.originFileObj);
+          uploadedPDFUrls.push(pdfUrl);
+        }
+      }
+    }
+
+    const formData: TeacherFormValues & { pdfUrls?: string[] } = {
+      fullName: values.fullName,
+      phoneNumber: values.phoneNumber,
+      biography: values.biography || '',
+      imgUrl: uploadedImageUrl,
+      input: values.input || '',
+      profession:values.profession||'',
+      lavozmId: Number(values.lavozmId),
+      email: values.email,
+      age: Number(values.age),
+      gender: values.gender === 'male',
+      password: values.password,
+      departmentId: Number(values.departmentId),
+      pdfUrls: uploadedPDFUrls,
+    };
+
+    await createMutation.mutateAsync(formData);
+    handleClose();
+  } catch (error) {
+    console.error('Validation or submission failed:', error);
+  }
+};
+
 
   const draggerProps: UploadProps = {
     name: 'teacherImage',
@@ -138,8 +153,43 @@ export const TeacherSidebar = ({
       setFileList([]);
     },
   };
+ const draggerPropsPDF: UploadProps = {
+  name: 'teacherPDF',
+  multiple: true,
+  fileList: PDFfile,
+  beforeUpload: (file: File & { uid?: string }) => {
+    const isPDF = file.type === 'application/pdf';
+    if (!isPDF) {
+      message.error('Faqat PDF formatdagi faylni yuklash mumkin!');
+      return Upload.LIST_IGNORE;
+    }
 
-  const isLoading = createMutation.isPending || uploadImageMutation.isPending;
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      message.error("Har bir fayl hajmi 5MB dan kichik bo'lishi kerak!");
+      return Upload.LIST_IGNORE;
+    }
+
+    setPDFfile(prev => [
+      ...prev,
+      {
+        uid: file.uid || String(Date.now() + Math.random()),
+        name: file.name,
+        status: 'done',
+        originFileObj: file,
+      } as UploadFile,
+    ]);
+
+    return false;
+  },
+  onRemove: (file) => {
+    setPDFfile(prev => prev.filter(item => item.uid !== file.uid));
+  },
+};
+  const isLoading =
+  createMutation.isPending ||
+  uploadImageMutation?.isPending ||
+  uploadPDFMutation?.isPending;
 
   return (
     <Drawer
@@ -302,7 +352,6 @@ export const TeacherSidebar = ({
           <TextArea
             placeholder="Qisqacha biografiya kiriting"
             rows={4}
-            maxLength={500}
             showCount
           />
         </Form.Item>
@@ -324,7 +373,26 @@ export const TeacherSidebar = ({
             </p>
           </Dragger>
         </Form.Item>
+
+        <Form.Item label="Mutaxasisligi" name="profession">
+          <Input placeholder="Mutaxasisligi" size="large" />
+        </Form.Item>
+
+        <Form.Item label="PDF">
+          <Dragger {...draggerPropsPDF}>
+            <p className="ant-upload-drag-icon">
+              <InboxOutlined />
+            </p>
+            <p className="ant-upload-text">
+              PDFni yuklash uchun bosing yoki sudrab keling
+            </p>
+            <p className="ant-upload-hint">
+              Faqat PDF formatdagi fayllar. Maksimal hajm: 5MB
+            </p>
+          </Dragger>
+        </Form.Item>
       </Form>
-    </Drawer>
+      
+    </Drawer> 
   );
 };

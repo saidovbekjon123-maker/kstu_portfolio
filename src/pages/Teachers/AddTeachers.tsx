@@ -44,6 +44,7 @@ const AddTeachers = () => {
     isTeachersLoading,
     createTeacherMutation,
     uploadImageMutation,
+    uploadPDFMutation,
   } = useTeacherOperations(
     {
       page: currentPage - 1, // Backend 0 dan boshlanadi
@@ -120,6 +121,7 @@ const AddTeachers = () => {
       <TeacherSidebar
         createMutation={createTeacherMutation}
         uploadImageMutation={uploadImageMutation}
+        uploadPDFMutation={uploadPDFMutation}
         departmentList={departments}
         positionList={positions}
       />

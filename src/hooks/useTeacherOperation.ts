@@ -7,6 +7,7 @@ import {
   createTeacher,
   getTeachers,
   GetTeachersParams,
+  uploadTeacherPDF,
 } from '../api/pagesApi/teacherApi';
 
 export const useTeacherOperations = (
@@ -35,6 +36,18 @@ export const useTeacherOperations = (
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || 'Rasm yuklashda xatolik!');
+      throw error;
+    },
+  });
+
+  // PDF yuklash
+  const uploadPDFMutation = useMutation({
+    mutationFn: uploadTeacherPDF,
+    onSuccess: data => {
+      return data;
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'PDF yuklashda xatolik!');
       throw error;
     },
   });
@@ -100,6 +113,7 @@ export const useTeacherOperations = (
 
     // Mutations
     uploadImageMutation,
+    uploadPDFMutation,
     createTeacherMutation,
     // updateTeacherMutation,
     // deleteTeacherMutation,

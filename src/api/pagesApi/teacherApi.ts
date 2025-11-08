@@ -19,7 +19,9 @@ export interface TeacherCreateData {
   phoneNumber: string;
   biography: string;
   imgUrl: string;
+  fileUrl:string;
   input: string;
+  profession:string;
   lavozmId: number;
   email: string;
   age: number;
@@ -39,6 +41,8 @@ export interface TeacherUpdateData {
   age?: number;
   gender?: boolean;
   departmentId?: number;
+  fileUrl?: string;
+  profession?: string;
 }
 
 export interface GetTeachersParams {
@@ -80,6 +84,24 @@ export const uploadTeacherImage = async (file: File): Promise<string> => {
     response.data
   );
 };
+//PDF yuklashga
+export const uploadTeacherPDF = async (file: File): Promise<string> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await axiosClient.post(API_ENDPOINTS.FILEPDF, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return (
+    response.data.data ||
+    response.data.fileUrl ||
+    response.data.url ||
+    response.data
+  );
+}; 
 
 // ✅ GET - O'qituvchilarni olish (pagination bilan)
 export const getTeachers = async (
