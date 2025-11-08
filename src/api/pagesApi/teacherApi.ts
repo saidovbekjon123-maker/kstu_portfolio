@@ -141,7 +141,7 @@ export const getTeachers = async (
     console.log('📥 GET Teachers Response:', response.data);
     return response.data.data;
   } catch (error: any) {
-    console.error(
+    console.error( 
       '❌ GET Teachers Error:',
       error.response?.data || error.message
     );
