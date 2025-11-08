@@ -8,3 +8,4 @@ export const API_ENDPOINTS = {
   AUTHSAVEUSER: '/auth/saveUser',
   USERS: 'user/',
 };
+ 
