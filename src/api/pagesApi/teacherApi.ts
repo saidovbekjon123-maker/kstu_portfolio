@@ -9,7 +9,7 @@ export interface Teacher {
   lavozim: string;
   email: string;
   imgUrl: string;
-  input: string;
+  input: string; 
   phoneNumber: string;
   departmentName: string;
 }
